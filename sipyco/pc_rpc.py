@@ -108,6 +108,7 @@ class Client:
 
     def __init__(self, host, port, target_name=AutoTarget, timeout=None):
         self.__socket = socket.create_connection((host, port), timeout)
+        self.__lock = False
 
         try:
             self.__socket.sendall(_init_string)
@@ -153,11 +154,26 @@ class Client:
         self.__socket.close()
 
     def __send(self, obj):
+        while self.__lock:
+            time.sleep(1e-6)
+
+        self.__lock = True
+
         line = pyon.encode(obj) + "\n"
         self.__socket.sendall(line.encode())
 
+        self.__lock = False
+
     def __recv(self):
+        while self.__lock:
+            time.sleep(1e-6)
+
+        self.__lock = True
+
         line = _socket_readline(self.__socket)
+
+        self.__lock = False
+
         return pyon.decode(line)
 
     def __do_action(self, action):
